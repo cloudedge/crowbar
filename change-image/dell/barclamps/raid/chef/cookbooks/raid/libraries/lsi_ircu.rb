@@ -24,7 +24,9 @@ if __FILE__ == $0
 end
 
 
-class Crowbar::RAID::LSI_sasIrcu
+class Crowbar
+  class RAID
+    class LSI_sasIrcu
   
   attr_accessor :disks, :volumes, :debug
   CMD = '/updates/sas2ircu'
@@ -262,6 +264,8 @@ This method finds a stanza by name and returns an array with its content
     true
   end
   
+    end
+  end
 end
 
 
