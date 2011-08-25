@@ -26,23 +26,24 @@ config_bag = data_bag("crowbar-data")
 config = data_bag_item("crowbar-data",config_name) if config_bag.include?(config_name)
 log("Using config: #{config_name}")
 begin 
-## push the MegaCLI packages, and insall them
-
-["Lib_Utils-1.00-09.noarch.rpm", "MegaCli-8.00.48-1.i386.rpm"].each { |pkg| 
-  cookbook_file "/root/#{pgk}" do
-    source pkg    
+  ## push the MegaCLI packages, and insall them
+  
+  ["Lib_Utils-1.00-09.noarch.rpm", "MegaCli-8.00.48-1.i386.rpm"].each do |pkg| 
+    cookbook_file "/root/#{pkg}" do
+      source pkg    
+    end
+    
+    bash "install-#{pkg}" do
+      code "rpm -ivh #{pkg}"
+      cwd "/root"
+      returns [0,1]
+    end
   end
   
-  rpm_package pkg do
-    action :install
-    source pkg
-  end
-}  
-  
-  raid_raid_config "lsi_ircu" do
+  raid_raid_config "lsi-raid-config" do
     config config["config"]
-    debug_flag node[:raid][:debug]  
-    action [:apply, :report]
+    debug_flag   true #node[:raid][:debug]  
+    action [ :report, :apply, :report ]
   end
 end if raid_enable and !config.nil? and !config.empty?
 log("END raid-install") {level :info} 
