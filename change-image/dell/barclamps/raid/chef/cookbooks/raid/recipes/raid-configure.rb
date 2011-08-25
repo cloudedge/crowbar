@@ -44,5 +44,5 @@ begin
     debug_flag node[:raid][:debug]  
     action [:apply, :report]
   end
-end if raid_enable and !config.blank?
+end if raid_enable and !config.nil? and !config.empty?
 log("END raid-install") {level :info} 
