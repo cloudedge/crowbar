@@ -30,13 +30,19 @@ Sample config block:
 
 
 def load_current_resource  
-  find_controller
-  if @raid.nil?
+  Crowbar::RAID.controller_styles.each { |c| 
+    @raid = c.new
+    test = @raid.find_controller
+    break if !test.nil? 
+  }
+  @raid = Crowbar::RAID::LSI_sasIrcu.new
+  @raid.debug = @new_resource.debug_flag
+  begin
+    @raid.load_info    
+  rescue 
+    log("can't find controller on this system. bailing")
     @failed = true
-    return 
   end
-  @raid.debug = @new_resource.debug_flag  
-  @raid.load_info    
 end
 
 action :report do
@@ -54,24 +60,6 @@ end
 action :apply do
   apply_config unless @failed  
 end
-
-def find_controller
-  log("will try #{Crowbar::RAID.controller_styles.join(" ")}")
-  Crowbar::RAID.controller_styles.each { |c| 
-    log("trying #{c}") {level :debug}
-    @raid = c.new
-    test = @raid.find_controller
-    if !test.nil?
-      log("using #{c}") {level :debug}
-      break 
-    end
-    @raid = nil # nil out if it didn't take     
-  }
-  log("no suported RAID controller found on this system"){level :error} if @raid.nil?    
-  
-  
-end
-
 
 
 def apply_config  
@@ -145,7 +133,7 @@ def apply_config
   disks_used.flatten!
   disk_avail = @raid.disks.dup
   disk_avail.delete_if { |d| disks_used.include?("#{d.enclosure}:#{d.slot}") }
-  log_("available disks: #{disk_avail.join(',')}")
+  log_("available disks: #{disk_avail.join(' ')}")
   
   # allocate disks, and make a list of volumes to create
   missing.sort! { | a,b | a[:order] <=> b[:order] } # sort by order  
@@ -237,7 +225,6 @@ end
 def adjust_max_disk_cnt(config, s_cnt)
   v = config
   log_pref = "for #{config[:vol_name]} type:#{v[:raid_level]} "
-  log ("checking #{log_pref} with #{s_cnt} disks")
   case v[:raid_level].intern
     when :RAID1
     raise "RAID1 - must have 2 disks" if s_cnt < 2

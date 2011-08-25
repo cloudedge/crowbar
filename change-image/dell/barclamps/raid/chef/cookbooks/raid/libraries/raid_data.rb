@@ -20,7 +20,6 @@
 ####
 # Some common data structures used by all RAID support libraries
 
-$in_chef = true
 
 class Crowbar
   class RAID
@@ -138,7 +137,7 @@ class Crowbar
         IO.popen(cmd) {|f|                
           text = f.readlines  
         }
-        raise "cmd #{cmd} returned #{$?}. #{text}" unless $? ==0
+        raise "cmd #{cmd} returned #{$?}" unless $? ==0
       end
       text
     end

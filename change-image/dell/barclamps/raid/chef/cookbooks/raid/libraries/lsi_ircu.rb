@@ -17,45 +17,46 @@
 #
 
 require 'pty'
+#$in_chef = true
 if __FILE__ == $0
   require 'raid_data'
-  $in_chef = false
+  in_chef = false
 end
 
 
 class Crowbar
   class RAID
     class LSI_sasIrcu < Crowbar::RAID
-      
-      attr_accessor :disks, :volumes, :debug
-      CMD = '/updates/sas2ircu'
-      RAID_MAP = {
+  
+  attr_accessor :disks, :volumes, :debug
+  CMD = '/updates/sas2ircu'
+  RAID_MAP = {
     "RAID0" => :RAID0,
     "RAID1" => :RAID1,
     "RAID1E" => :RAID1E,
     "RAID10" => :RAID10
-      }  
-     
-      
-      @@re_lines = /^-+$/
-      
-      
-      def find_controller
-        run_tool(["list"]) rescue return nil
-        @cntrl_id =0  # seems that if there's just 1, it's always 0..    
-      end
-      
-      def load_info    
-        lines = run_tool(["display"])
-        phyz = find_stanza lines,"Physical device information"
-        logical = find_stanza lines, "IR Volume information"
-        
-        @disks = parse_dev_info phyz
-        @volumes = parse_vol_info logical
-      end
-      
-      
-      
+  }  
+  
+  def initialize
+    @@re_lines = /^-+$/
+  end
+  
+  def find_controller
+    @cntrl_id =0  # seems that if there's just 1, it's always 0..
+    return nil
+  end
+  
+  def load_info    
+    lines = run_tool(["display"])
+    phyz = find_stanza lines,"Physical device information"
+    logical = find_stanza lines, "IR Volume information"
+    
+    @disks = parse_dev_info phyz
+    @volumes = parse_vol_info logical
+  end
+  
+  
+  
 =begin
 Issue the command to create a RAID volue:
  The format of the CREATE command is
@@ -84,28 +85,28 @@ Issue the command to create a RAID volue:
         warnings and prompts
 
 =end  
-      def create_volume(type, name, disk_ids )
-        ## build up the command...     
-        text = ""
-        run_tool(["create", type.to_s, "MAX", disk_ids, "'#{name}'","noprompt"]){ |f| 
-          text = f.readlines
-        }
-        text.to_s.strip
-      rescue
-        log("create returned: #{text}", :ERROR)
-        raise 
-      end
-      
-      def delete_volume(id)
-        text = ""
-        run_tool(["delete", id, "noprompt"]) { |f|
-          text = f.readlines
-        }
-      rescue
-        log("delete returned: #{text}", :ERROR)
-        raise 
-      end
-      
+  def create_volume(type, name, disk_ids )
+    ## build up the command...     
+    text = ""
+    run_tool(["create", type.to_s, "MAX", disk_ids, "'#{name}'","noprompt"]){ |f| 
+      text = f.readlines
+    }
+    text.to_s.strip
+  rescue
+    Chef::Log.error("create returned: #{text}")
+    raise 
+  end
+  
+  def delete_volume(id)
+    text = ""
+    run_tool(["delete", id, "noprompt"]) { |f|
+      text = f.readlines
+    }
+  rescue
+    Chef::Log.error("delete returned: #{text}")
+    raise 
+  end
+  
 =begin  
 
 IR volume 1
@@ -118,35 +119,35 @@ IR volume 1
   PHY[0] Enclosure#/Slot#                 : 2:10
   PHY[1] Enclosure#/Slot#                 : 2:11
 =end
+  
+  def parse_vol_info(lines)
+    vols= []
+    begin
+      skip_to_find lines,/^IR volume (\d+)\s*/
+      break if lines.length ==0
+      lines.shift
       
-      def parse_vol_info(lines)
-        vols= []
-        begin
-          skip_to_find lines,/^IR volume (\d+)\s*/
-          break if lines.length ==0
-          lines.shift
-          
-          rv = Crowbar::RAID::Volume.new
-          rv.vol_id=extract_value(lines.shift)
-          rv.vol_name =extract_value(lines.shift)
-          lines.shift
-          #      skip_to_find lines, /\s+RAID level\s*:\s*$/
-          raid_level =extract_value(lines.shift)
-          rv.raid_level=RAID_MAP[raid_level]
-          
-          skip_to_find lines,/\s+Physical hard disks\s*:\s*$/
-          lines.shift
-          disk_re = /\s+PHY.* : (\d+):(\d+)\s*$/
-          begin
-            rd = Crowbar::RAID::RaidDisk.new
-            rd.enclosure, rd.slot = rv.name =disk_re.match(lines.shift)[1,2]
-            rv.members << rd
-          end while lines.length > 0 and disk_re.match(lines[0])
-          vols << rv
-        end while lines.length > 0      
-        vols
-      end
+      rv = Crowbar::RAID::Volume.new
+      rv.vol_id=extract_value(lines.shift)
+      rv.vol_name =extract_value(lines.shift)
+      lines.shift
+      #      skip_to_find lines, /\s+RAID level\s*:\s*$/
+      raid_level =extract_value(lines.shift)
+      rv.raid_level=RAID_MAP[raid_level]
       
+      skip_to_find lines,/\s+Physical hard disks\s*:\s*$/
+      lines.shift
+      disk_re = /\s+PHY.* : (\d+):(\d+)\s*$/
+      begin
+        rd = Crowbar::RAID::RaidDisk.new
+        rd.enclosure, rd.slot = rv.name =disk_re.match(lines.shift)[1,2]
+        rv.members << rd
+      end while lines.length > 0 and disk_re.match(lines[0])
+      vols << rv
+    end while lines.length > 0      
+    vols
+  end
+  
 =begin
 Parse out disk info. Needed to create raid sets (enclosure and slot)
 
@@ -164,21 +165,27 @@ Device is a Hard disk
   Drive Type                              : SATA_HDD
 
 =end
-      
-      def parse_dev_info(lines)
-        disks = []
-        begin
-          skip_to_find lines,/^Device is a Hard disk\s*/
-          break if lines.length ==0
-          lines.shift      
-          rd = Crowbar::RAID::RaidDisk.new
-          rd.enclosure = extract_value(lines.shift)
-          rd.slot =extract_value(lines.shift)
-          disks<<rd      
+  
+  def parse_dev_info(lines)
+    disks = []
+    begin
+      skip_to_find lines,/^Device is a Hard disk\s*/
+      break if lines.length ==0
+      lines.shift      
+      rd = Crowbar::RAID::RaidDisk.new
+      rd.enclosure = extract_value(lines.shift)
+      rd.slot =extract_value(lines.shift)
+      disks<<rd      
     end while lines.length > 0
     disks    
   end
-   
+  
+  
+  
+  def extract_value(line, re = /\s+(.*)\s+:(.*)\s*$/)
+    re.match(line)
+    $2.strip unless $2.nil?
+  end
   
   
 =begin
@@ -207,14 +214,28 @@ This method finds a stanza by name and returns an array with its content
     ours    
   end
   
+  def skip_to_find(lines, re)
+    skipped = []
+    skipped << lines.shift while lines.length > 0 and re.match(lines[0]).nil?
+    log("first line is:#{lines[0].nil? ? '-' : lines[0]}")
+    skipped
+  end
   
     def run_tool (args, &block)    
-    cmd = [CMD]
-    cmd << @cntrl_id unless @cntrl_id.nil?
-    cmd = cmd + [*args]
-    run_command(cmd.join(" "), &block)
+    cmd = [CMD, @cntrl_id, *args].join(" ")
+    run_tool(cmd,args,&block)
   end
 
+  def log(msg)
+    return unless @debug
+    if $in_chef
+      Chef::Log.info(msg)
+    else
+      puts msg
+    end
+
+    true
+  end
   
     end
   end

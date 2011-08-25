@@ -1,0 +1,41 @@
+{
+  "platforms": {
+
+  },
+  "suggestions": {
+
+  },
+  "license": "Apache 2.0",
+  "conflicting": {
+
+  },
+  "long_description": "Manipulates RAID controller configuration to match desired RAID volumes",
+  "providing": {
+
+  },
+  "description": "Manipulates RAID controller configuration to match desired RAID volumes",
+  "version": "0.1.0",
+  "maintainer": "Dell, Inc.",
+  "replacing": {
+
+  },
+  "attributes": {
+
+  },
+  "maintainer_email": "crowbar@dell.com",
+  "name": "raid",
+  "recipes": {
+
+  },
+  "groupings": {
+
+  },
+  "dependencies": {
+    "utils": [
+
+    ]
+  },
+  "recommendations": {
+
+  }
+}

@@ -28,17 +28,16 @@ class Crowbar
       
       ## require modprobe mptsas
       CMD = '/opt/MegaRAID/MegaCli/MegaCli64'
-      @@vol_re = /Virtual Drive:\s*(\d+)\s*\(Target Id:\s*(\d+)\)/
-      @@disk_re = /PD:\s*(\d+)\s*Information/              
+      
+      def initialize
+        @@vol_re = /Virtual Drive:\s*(\d+)\s*\(Target Id:\s*(\d+)\)/
+        @@disk_re = /PD:\s*(\d+)\s*Information/        
+        @debug= true        
+      end
       
       def find_controller
-        ## adpCount sets the return code to 0 if no controller is found
-        begin          
-          run_tool(["-adpCount"])
-          return nil
-        rescue
-          ## we have a controller... return it's ID
-        end
+        @cntrl_id ="All"
+        run_tool(["-adpAllInfo"]) rescue retrun nil
         @cntrl_id = 0
       end
       
@@ -50,11 +49,21 @@ class Crowbar
         @volumes = parse_volumes(vols)
       end   
       
+      
+      def validate_config
+        
+      end
+      
+      def adjust_max_disk_cnt
+        
+      end
+      
+      
       def create_volume(type, name, disk_ids )
         ## build up the command...     
         text = ""
         cmd = []
-        case type.intern
+        case type
           when :RAID0,:RAID1 
           cmd = ["-CfgLdAdd", type == :RAID0 ? "-r0" : "-r1"]
           cmd << "[ #{disk_ids.join(",")} ]"             
@@ -67,12 +76,14 @@ class Crowbar
           cmd << "-Array1[#{span1}]"
           
           when :JBOD
-          raise "JBOD Is not supported"
-        else
-          raise "unknown raid level requested: #{type}"
+          rais "JBOD Is not supporte"
+          
         end
         
-        run_tool(cmd)
+        run_tool(cmd){ |f| 
+          text = f.readlines
+        }
+        text.to_s.strip
       rescue
         log("create returned: #{text}", :ERROR)
         raise 
@@ -149,15 +160,17 @@ class Crowbar
           when /Primary-0, Secondary-0/
           rv.raid_level = :RAID0
           when /Primary-1, Secondary-0/
-          rv.raid_level = :RAID1
+          rv.raid_levle = :RAID1
         end          
         rv.members = parse_dev_info(lines)
         rv
-      end    
+      end
+      
+      
       
       def run_tool(args, &block)    
         cmd = [CMD, *args]
-        cmd << "-a#{@cntrl_id}" unless @cntrl_id.nil?
+        cmd << "-a#{@cntrl_id}"
         cmdline = cmd.join(" ")
         run_command(cmdline, &block)
       end
@@ -165,7 +178,7 @@ class Crowbar
   end 
 end
 
-
+$in_chef = false
 if __FILE__ == $0
   require 'lsi_ircu'
   require 'lsi_megacli'
@@ -180,12 +193,25 @@ if __FILE__ == $0
       puts("using #{c} ") 
       break 
     end
-    @raid = nil # nil out if it didn't take     
   }
-  puts "no controller " if @raid.nil?  
+  
   
   t = @raid #Crowbar::RAID::LSI_MegaCli.new
   t.load_info
+=begin
+  text = IO.readlines(ARGV[0])
+  puts "input len #{text.length}"
+  vols = t.parse_volumes(text)
+  puts "found these volumes:"
+  vols.each { |x| puts x}
+  
+  text = IO.readlines(ARGV[1])
+  puts "Drivers input len #{text.length}"
+  
+  devs= t.parse_dev_info(text)
+  puts "found these devices:"
+  devs.each { |x| puts x}
+=end  
   puts(t.describe_volumes)
   puts(t.describe_disks)  
   t.volumes.each { |x| t.delete_volume(x.vol_id)}
@@ -193,6 +219,6 @@ if __FILE__ == $0
   disk_ids = t.disks.map{ |d| "#{d.enclosure}:#{d.slot}"}    
   puts "sleeping for a big"
   sleep 10
-  t.create_volume(:RAID10, "dummy", [disk_ids[0]])  
+  t.create_volume(:RAID0, "dummy", [disk_ids[0]])  
   
 end
