@@ -17,7 +17,7 @@
 #
 
 require 'pty'
-$in_chef = true
+#$in_chef = true
 if __FILE__ == $0
   require 'raid_data'
   in_chef = false
@@ -26,7 +26,7 @@ end
 
 class Crowbar
   class RAID
-    class LSI_sasIrcu
+    class LSI_sasIrcu < Crowbar::RAID
   
   attr_accessor :disks, :volumes, :debug
   CMD = '/updates/sas2ircu'
@@ -38,13 +38,12 @@ class Crowbar
   }  
   
   def initialize
-    find_controller    
     @@re_lines = /^-+$/
-    @debug = false
   end
   
   def find_controller
     @cntrl_id =0  # seems that if there's just 1, it's always 0..
+    return nil
   end
   
   def load_info    
@@ -56,19 +55,6 @@ class Crowbar
     @volumes = parse_vol_info logical
   end
   
-  def describe_volumes
-    load_info if @volumes.nil?
-    s = ""
-    @volumes.each { |v| s << v.to_s << " "}
-    s
-  end
-  
-  def describe_disks
-    load_info if @disks.nil?
-    s = ""
-    @disks.each { |d| s << d.to_s << " " }
-    s
-  end
   
   
 =begin
@@ -237,20 +223,7 @@ This method finds a stanza by name and returns an array with its content
   
     def run_tool (args, &block)    
     cmd = [CMD, @cntrl_id, *args].join(" ")
-    log "will execute #{cmd}"
-    if block_given?
-      ret = IO.popen(cmd,&block)            
-      log ("return code is #{$?}")          
-      raise "cmd #{cmd} returned #{$?}" unless $? ==0 
-      return ret
-    else
-      text = ""
-      IO.popen(cmd) {|f|                
-        text = f.readlines  
-      }
-      raise "cmd #{cmd} returned #{$?}" unless $? ==0
-    end
-    text
+    run_tool(cmd,args,&block)
   end
 
   def log(msg)

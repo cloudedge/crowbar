@@ -26,6 +26,18 @@ config_bag = data_bag("crowbar-data")
 config = data_bag_item("crowbar-data",config_name) if config_bag.include?(config_name)
 log("Using config: #{config_name}")
 begin 
+## push the MegaCLI packages, and insall them
+
+["Lib_Utils-1.00-09.noarch.rpm", "MegaCli-8.00.48-1.i386.rpm"].each { |pkg| 
+  cookbook_file "/root/#{pgk}" do
+    source pkg    
+  end
+  
+  rpm_package pkg do
+    action :install
+    source pkg
+  end
+}  
   
   raid_raid_config "lsi_ircu" do
     config config["config"]

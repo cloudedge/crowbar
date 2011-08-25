@@ -29,8 +29,12 @@ Sample config block:
 =end
 
 
-def load_current_resource
-  
+def load_current_resource  
+  Crowbar::RAID.controller_styles.each { |c| 
+    @raid = c.new
+    test = @raid.find_controller
+    break if !test.nil? 
+  }
   @raid = Crowbar::RAID::LSI_sasIrcu.new
   @raid.debug = @new_resource.debug_flag
   begin
