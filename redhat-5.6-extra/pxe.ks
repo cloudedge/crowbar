@@ -144,6 +144,7 @@ cd ..
  
 # Make sure the bin directory is executable
 chmod +x /opt/dell/bin/*
+chmod +x /tftpboot/redhat-dvd/extra/*
 
 # Look for any crowbar specific kernel parameters
 for s in $(cat /proc/cmdline); do
