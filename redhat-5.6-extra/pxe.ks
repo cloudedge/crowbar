@@ -149,7 +149,6 @@ cd ..
  
 # Make sure the bin directory is executable
 chmod +x /opt/dell/bin/*
-chmod +rx /tftpboot/redhat_dvd/extra/install*
 
 # This directory is the model to help users create new barclamps
 #cp -r barclamp_model /opt/dell
