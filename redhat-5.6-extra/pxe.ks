@@ -109,7 +109,7 @@ finishing_scripts="update_hostname.sh parse_node_data"
     mdcp /opt/dell/bin $finishing_scripts
 )
 
-barclamp_scripts="install_barclamp.sh"
+barclamp_scripts="barclamp_install.rb"
 ( 
     cd $BASEDIR/dell/barclamps/crowbar/bin
     mdcp /opt/dell/bin $barclamp_scripts
@@ -122,19 +122,18 @@ barclamp_scripts="install_barclamp.sh"
 )
 ln -s /opt/dell/h2n-2.56/h2n /opt/dell/bin/h2n    
     
-# nope.
-#mdcp /opt/dell -r "$BASEDIR/dell/crowbar_framework" 
+mdcp /opt/dell -r "$BASEDIR/dell/crowbar_framework" 
 
 # Make a destination for switch configs
-# mdcp /opt/dell/switch "$BASEDIR/dell/"*.stk
+mdcp /opt/dell/switch "$BASEDIR/dell/"*.stk
 
 # put the chef files in place
-#mdcp /opt/dell -r "$BASEDIR/dell/chef"
-#mdcp /etc/rsyslog.d "$BASEDIR/dell/rsyslog.d/"*
+mdcp /opt/dell -r "$BASEDIR/dell/chef"
+mdcp /etc/rsyslog.d "$BASEDIR/dell/rsyslog.d/"*
 
 # Barclamp preparation (put them in the right places)
 mkdir /opt/dell/barclamps
-cd /tftpboot/redhat_dvd/dell/barclamps
+cd barclamps
 for i in *; do
   [[ -d $i ]] || continue
   if [ -e $i/crowbar.yml ]; then
@@ -151,7 +150,7 @@ cd ..
 chmod +x /opt/dell/bin/*
 
 # This directory is the model to help users create new barclamps
-#cp -r barclamp_model /opt/dell
+cp -r barclamp_model /opt/dell
 
 # Look for any crowbar specific kernel parameters
 for s in $(cat /proc/cmdline); do
