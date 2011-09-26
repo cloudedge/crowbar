@@ -226,13 +226,6 @@ maybe_update_cache() {
     fi
 }
 
-reindex_packages() (
-    # Make our new packages repository.
-    cd "$BUILD_DIR/extra" 
-	debug "Recreating Packages.gz"
-	dpkg-scanpackages pkgs /dev/null 2>/dev/null |gzip -9 >Packages.gz
-)
-
 final_build_fixups() {
     # Copy our isolinux and preseed files.
     mv "$BUILD_DIR/extra/isolinux" "$BUILD_DIR/extra/preseed" "$BUILD_DIR"
@@ -265,7 +258,7 @@ final_build_fixups() {
     
 }
 
-for cmd in sudo chroot debootstrap mkisofs dpkg-scanpackages; do
+for cmd in sudo chroot debootstrap mkisofs; do
     which "$cmd" &>/dev/null || \
 	die 1 "Please install $cmd before trying to build Crowbar."
 done

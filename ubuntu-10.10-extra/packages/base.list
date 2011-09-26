@@ -21,13 +21,18 @@ repository deb http://security.ubuntu.com/ubuntu maverick-security main restrict
 repository deb-src http://security.ubuntu.com/ubuntu maverick-security main restricted universe multiverse
 
 # required Chef repository
-repository deb http://apt.opscode.com/ maverick main
+repository deb http://apt.opscode.com/ maverick-0.10 main
+
+# Rabbit MQ repo
+repository deb http://www.rabbitmq.com/debian/ testing main
 
 # base Chef packages
 pkgs chef chef-server chef-server-webui kwalify libcurl4-gnutls-dev build-essential ruby-dev rubygems1.8 syslinux sqlite libsqlite3-dev
 
 # base gems we will need
-gems activesupport-3.0.8 haml-3.1.1  i18n-0.6.0  json-1.5.2  net-http-digest_auth-1.1.1  patron-0.4.11  sass-3.1.2  simple-navigation-3.3.0  syslogger-1.2.4 passenger net-ssh-multi sqlite3-ruby
+gems activesupport haml i18n json net-http-digest_auth sass simple-navigation
+gems syslogger builder bluepill rdoc sqlite3-ruby
+gems rails-2.3.12 rainbows
 
 # additional debs we will need
 # apache stuff
@@ -75,9 +80,6 @@ pkgs nscd
 # nagios stuff
 pkgs nagios-nrpe-server nagios-plugins nagios-plugins-basic nagios-plugins-standard libjson-perl libmath-calc-units-perl libnagios-plugin-perl libnagios-object-perl libparams-validate-perl nagios3 nagios-nrpe-plugin nagios-images
 
-# glance stuff
-pkgs glance python-glance
-
 # bind9 stuff
 pkgs bind9 bind9utils
 
@@ -95,3 +97,6 @@ pkgs ipmitool
 
 # network stuff
 pkgs bridge-utils vlan ifenslave-2.6 dhcp3-server tftpd-hpa nfs-common portmap nfs-kernel-server
+
+# git
+pkgs git
