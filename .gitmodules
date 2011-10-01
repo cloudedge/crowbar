@@ -34,9 +34,6 @@
 [submodule "barclamps/test"]
 	path = barclamps/test
 	url = http://github.com/dellcloudedge/barclamp-test
-[submodule "barclamps/ubuntu-install"]
-	path = barclamps/ubuntu-install
-	url = http://github.com/dellcloudedge/barclamp-ubuntu-install
 [submodule "barclamps/bios"]
 	path = barclamps/bios
 	url = gitolite@10.9.244.31:barclamp-bios
