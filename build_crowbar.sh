@@ -31,6 +31,10 @@
 # this build script can be smarter about what packages it should pull in
 # whenever you invoke it to build an iso.
 
+# We always use the C language and locale
+export LANG="C"
+export LC_ALL="C"
+
 
 GEM_RE='([^0-9].*)-([0-9].*)'
 [[ $DEBUG ]] && {
@@ -509,7 +513,7 @@ fi
 # Arrays holding the additional pkgs and gems populate Crowbar with.
 REPOS=()
 
-declare -A CD_POOL STAGED_POOL
+declare -A CD_POOL STAGED_POOL INSTALLED_PKGS
 
 # Some helper functions
 
@@ -657,8 +661,15 @@ fi
 . "$CROWBAR_DIR/$OS_TO_STAGE-extra/build_lib.sh"
 
 {
+    # Check to make sure our required commands are installed.
+    for cmd in sudo chroot mkisofs ruby; do
+	which "$cmd" &>/dev/null || \
+	    die 1 "Please install $cmd before trying to build Crowbar."
+    done
+ 
     # Make sure only one instance of the ISO build runs at a time.
     # Otherwise you can easily end up with a corrupted image.
+   
     debug "Acquiring the build lock."
     flock 65
     # Figure out what our current branch is, in case we need to merge 
@@ -762,7 +773,6 @@ fi
 		type shrink_iso >&/dev/null || \
 		    die "The build system does not know how to shrink $OS_TO_STAGE"
 		SHRINK_ISO=true
-		declare -A INSTALLED_PKGS
 		shift;;
 	    --generate-minimal-install)
 		type generate_minimal_install &>/dev/null || \
