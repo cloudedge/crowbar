@@ -51,11 +51,11 @@
         "crowbar": { "password": "crowbar" }
       },
       "bios-settings": {
-         "hadoop": "hadoop"
+         "Hadoop": "Hadoop"
       },
       "raid-settings": {
-         "JBODOnly" : "JBOD Only",
-         "SingleRaid10": "Single RAID 10" 
+         "JBOD Only" : "JBODOnly",
+         "Single RAID 10": "SingleRaid10" 
       },
       "node-usage": {
         "hadoop" : "hadoop"
