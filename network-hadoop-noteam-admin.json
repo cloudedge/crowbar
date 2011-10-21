@@ -98,7 +98,7 @@
             "public" : {
             	"if_list": [ "1g3", "1g4" ],
             	"team_mode" : 6
-            	}
+            }
           }
         },
         {
@@ -110,7 +110,7 @@
             "admin": {
               "if_list": [ "1g2" ]
             },
-            "external": {
+            "public": {
               "if_list": [ "1g3" ]
             }
           }
@@ -124,7 +124,7 @@
             "admin": {
               "if_list": [ "1g1" ]
             },
-            "external": {
+            "public": {
               "if_list": [ "1g1" ]
             }
           }
@@ -214,5 +214,5 @@
         "transition_list": [ "discovered" ]
       }
     }
-   }
   }
+}

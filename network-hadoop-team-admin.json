@@ -57,7 +57,7 @@
       ],
       "conduit_map": [
         {
-          "pattern": "team/.*/hadoop*.namenode",
+          "pattern": "team/.*/hadoop.*namenode",
           "conduit_list": { 
            "prod": {
               "if_list": [ "1g1", "1g2", "1g3" ],
@@ -81,7 +81,7 @@
 	  }
 	},
 	{
-          "pattern": "team/.*/hadoop*.slavenode",
+          "pattern": "team/.*/hadoop-slavenode",
           "conduit_list": { 
              "prod": {
               "if_list": [ "1g1", "1g2" ],
@@ -90,16 +90,16 @@
           }
         },
         {
-          "pattern": "team/.*/hadoop*.edgenode",
+          "pattern": "team/.*/hadoop-edgenode",
           "conduit_list": { 
            "prod": {
               "if_list": [ "1g1", "1g2" ],
               "team_mode": 6
             },
-            "external" : {
+            "public" : {
             	"if_list": [ "1g3", "1g4" ],
             	"team_mode" : 6
-            	}
+            }
           }
         },
         {
@@ -111,7 +111,7 @@
             "admin": {
               "if_list": [ "1g2" ]
             },
-            "external": {
+            "public": {
               "if_list": [ "1g3" ]
             }
           }
@@ -125,7 +125,7 @@
             "admin": {
               "if_list": [ "1g1" ]
             },
-            "external": {
+            "public": {
               "if_list": [ "1g1" ]
             }
           }
@@ -171,8 +171,8 @@
 			"host": { "start": "172.16.0.21", "end": "172.16.0.50" }
 	    }
         },
-        "external": {
-		"conduit": "external",
+        "public": {
+		"conduit": "public",
 		"vlan": 500,
 		"use_vlan": false,
 		"add_bridge": false,
@@ -217,4 +217,3 @@
     }
   }
 }
-
