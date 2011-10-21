@@ -57,7 +57,7 @@
       ],
       "conduit_map": [
         {
-          "pattern": "team/.*/hadoop.*namenode",
+          "pattern": "team/.*/hadoop-masternamenode",
           "conduit_list": { 
            "prod": {
               "if_list": [ "1g1", "1g2", "1g3" ],
