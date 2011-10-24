@@ -65,18 +65,21 @@
             },
             "mgmt": {
               "if_list": [ "1g4" ]
-              }
+            }
           }
         },
    	{
 	  "pattern": "team/.*/crowbar-config-default",
 	  "conduit_list": { 
 	   "prod": {
-	      "if_list": [ "1g1" ]
+	      "if_list": [ "1g2" ]
 	    },
+            "public": {
+              "if_list": [ "1g1" ]
+            },
 	    "mgmt": {
 	      "if_list": [ "1g4" ]
-	      }
+            }
 	  }
 	},
 	{
