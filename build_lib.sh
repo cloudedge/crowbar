@@ -38,17 +38,17 @@ get_barclamp_info() {
 			BC_DEPS["$bc"]+="$line ";;
 		    groups) is_in "$line" ${BC_GROUPS["$bc"]} || 
 			BC_GROUPS["$line"]+="$bc ";;
-		    pkgs) is_in "$line" ${BC_PKGS["$bc"]} || \
+		    pkgs|os_pkgs) is_in "$line" ${BC_PKGS["$bc"]} || \
 			BC_PKGS["$bc"]+="$line ";;
 		    extra_files) BC_EXTRA_FILES["$bc"]+="$line\n";;
 		    os_support) BC_OS_SUPPORT["$bc"]+="$line ";;
 		    gems) BC_GEMS["$bc"]+="$line ";;
-		    repos) BC_REPOS["$bc"]+="$line\n";;
-		    ppas) [[ $PKG_TYPE = debs ]] || \
+		    repos|os_repos) BC_REPOS["$bc"]+="$line\n";;
+		    ppas|os_ppas) [[ $PKG_TYPE = debs ]] || \
 			die "Cannot declare a PPA for $PKG_TYPE!"
 			BC_REPOS["$bc"]+="ppa $line\n";;
-		    build_pkgs) BC_BUILD_PKGS["$bc"]+="$line ";;
-		    raw_pkgs) BC_RAW_PKGS["$bc"]+="$line ";;
+		    build_pkgs|os_build_pkgs) BC_BUILD_PKGS["$bc"]+="$line ";;
+		    raw_pkgs|os_raw_pkgs) BC_RAW_PKGS["$bc"]+="$line ";;
 		    test_deps) BC_SMOKETEST_DEPS["$bc"]+="$line ";;
 		    test_timeouts) BC_SMOKETEST_TIMEOUTS["$bc"]+="$line ";;
 		    *) die "Cannot handle query for $query."
@@ -288,13 +288,19 @@ vercmp(){
 # Index the pool of packages in the CD.
 index_cd_pool() {
     # Scan through our pool to find pkgs we can easily omit.
-
-    local pkgname='' pkg=''
-    while read pkg; do
-	[[ -f $pkg ]] && is_pkg "$pkg" || continue
-	pkgname="$(pkg_name "$pkg")"
-	CD_POOL["$pkgname"]="${pkg}"
-    done < <(find "$(find_cd_pool)" -type f)
+    local pkgname='' pkg='' cache="$CACHE_DIR/$OS_TOKEN/iso-packages"
+    if [[ $ISO_LIBRARY/$ISO -nt $cache ]]; then
+	mkdir -p "$cache%/*"
+	> "$cache"
+	while read pkg; do
+	    [[ -f $pkg ]] && is_pkg "$pkg" || continue
+	    pkgname="$(pkg_name "$pkg")"
+	    CD_POOL["$pkgname"]="${pkg}"
+	    echo "CD_POOL[\"$pkgname\"]=\"${pkg}\"" >> "$cache"
+	done < <(find "$(find_cd_pool)" -type f)
+    else
+	. "$cache"
+    fi
 }
 
 # Make a chroot environment for package-fetching purposes. 
