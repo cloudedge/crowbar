@@ -9,16 +9,11 @@
         "ipmi", 
         "network", 
         "provisioner",
-<<<<<<< HEAD
 	"redhat_install",
-=======
-        "ubuntu_install",  
->>>>>>> a63de88690f050ad7ccf2a1fb34b076906bfa5ac
         "ntp", 
         "dns", 
         "nagios", 
         "ganglia", 
-<<<<<<< HEAD
         "logging" 
       ],
       "run_order": {
@@ -27,20 +22,6 @@
         "ipmi": 17,
         "bios": 18,
         "raid": 19,
-=======
-        "logging",
-        "mysql",
-        "keystone",
-        "nova",
-        "nova_dashboard",
-        "swift",
-        "glance"
-      ],
-      "run_order": {
-        "deployer": 10,
-	"ubuntu_install": 14,
-        "ipmi": 17,
->>>>>>> a63de88690f050ad7ccf2a1fb34b076906bfa5ac
         "network": 20,
         "dns": 30,
         "logging": 40,
@@ -52,13 +33,9 @@
       "instances": {
         "deployer": [ "default" ],
         "ipmi": [ "default" ],
-<<<<<<< HEAD
         "bios": [ "default" ],
         "raid": [ "default" ],
-        "redhat_install": [ "default" ],
-=======
         "ubuntu_install": [ "default" ],
->>>>>>> a63de88690f050ad7ccf2a1fb34b076906bfa5ac
         "provisioner": [ "default" ],
         "network": [ "default" ],
         "ntp": [ "default" ],
@@ -74,7 +51,6 @@
         "crowbar": { "password": "crowbar" }
       },
       "bios-settings": {
-<<<<<<< HEAD
          "Hadoop": "Hadoop"
       },
       "raid-settings": {
@@ -83,19 +59,6 @@
       },
       "node-usage": {
         "hadoop" : "hadoop"
-=======
-          "Virtualization" : "Virtualization",
-	  "Storage" : "Storage"
-      },
-      "raid-settings": {
-          "JBOD Only": "JBODOnly",
-          "Single RAID 10": "SingleRaid10"
-      },
-      "node-usage": {
-          "Nova": "Nova",
-	  "Swift": "Swift",
-	  "Glance": "Glance"
->>>>>>> a63de88690f050ad7ccf2a1fb34b076906bfa5ac
       }
     },
     "rails": {
