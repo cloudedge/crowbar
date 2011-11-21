@@ -45,16 +45,16 @@
 	url = gitolite@10.9.244.31:barclamp-dell-branding
 [submodule "barclamps/hadoop"]
 	path = barclamps/hadoop
-	url = gitolite@10.9.244.31:barclamp-hadoop
+	url = http://github.com/dellcloudedge/barclamp-hadoop.git
 [submodule "barclamps/hive"]
 	path = barclamps/hive
-	url = gitolite@10.9.244.31:barclamp-hive
+	url = http://github.com/dellcloudedge/barclamp-hive.git
 [submodule "barclamps/pig"]
 	path = barclamps/pig
-	url = gitolite@10.9.244.31:barclamp-pig
+	url = http://github.com/dellcloudedge/barclamp-pig.git
 [submodule "barclamps/zookeeper"]
 	path = barclamps/zookeeper
-	url = gitolite@10.9.244.31:barclamp-zookeeper
+	url = http://github.com/dellcloudedge/barclamp-zookeeper.git
 [submodule "barclamps/sqoop"]
 	path = barclamps/sqoop
-	url = gitolite@10.9.244.31:barclamp-sqoop
+	url = http://github.com/dellcloudedge/barclamp-sqoop.git
