@@ -34,6 +34,7 @@
 [submodule "barclamps/test"]
 	path = barclamps/test
 	url = http://github.com/dellcloudedge/barclamp-test.git
+<<<<<<< HEAD
 [submodule "barclamps/bios"]
 	path = barclamps/bios
 	url = gitolite@10.9.244.31:barclamp-bios
@@ -43,6 +44,8 @@
 [submodule "barclamps/dell-branding"]
 	path = barclamps/dell-branding
 	url = gitolite@10.9.244.31:barclamp-dell-branding
+=======
+>>>>>>> hadoop-os-build
 [submodule "barclamps/hadoop"]
 	path = barclamps/hadoop
 	url = http://github.com/dellcloudedge/barclamp-hadoop.git

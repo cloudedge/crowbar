@@ -9,7 +9,7 @@
         "ipmi", 
         "network", 
         "provisioner",
-	"redhat_install",
+        "redhat_install",  
         "ntp", 
         "dns", 
         "nagios", 
@@ -18,7 +18,7 @@
       ],
       "run_order": {
         "deployer": 10,
-	"redhat_install": 14,
+        "redhat_install": 14,
         "ipmi": 17,
         "bios": 18,
         "raid": 19,
