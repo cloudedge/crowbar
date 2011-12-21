@@ -8,7 +8,6 @@
         "ipmi": [ "default" ],
         "bios": [ "default" ],
         "raid": [ "default" ],
-        "redhat_install": [ "default" ],
         "provisioner": [ "default" ],
         "network": [ "default" ],
         "ntp": [ "default" ],
