@@ -57,7 +57,7 @@
       ],
       "conduit_map": [
         {
-          "pattern": "team/.*/hadoop-masternamenode",
+          "pattern": "team/.*/.*masternamenode",
           "conduit_list": { 
            "prod": {
               "if_list": [ "1g1", "1g2", "1g3" ],
@@ -84,7 +84,7 @@
 	  }
 	},
 	{
-          "pattern": "team/.*/hadoop-slavenode",
+          "pattern": "team/.*/.*slavenode",
           "conduit_list": { 
              "prod": {
               "if_list": [ "1g1", "1g2" ],
@@ -93,7 +93,7 @@
           }
         },
         {
-          "pattern": "team/.*/hadoop-edgenode",
+          "pattern": "team/.*/.*edgenode",
           "conduit_list": { 
            "prod": {
               "if_list": [ "1g1", "1g2" ],
@@ -144,6 +144,7 @@
 		"netmask": "255.255.255.0",
 		"broadcast": "172.16.0.255",
 		"router": "172.16.0.1",
+		"router_pref": 30,
 		"ranges": {
 			"router": { "start": "172.16.0.1", "end": "172.16.0.10" },
 			"host": { "start": "172.16.0.51", "end": "172.16.0.254" }
@@ -170,6 +171,7 @@
 		"netmask": "255.255.255.0",
 		"broadcast": "172.16.0.255",
 		"router": "172.16.0.1",
+		"router_pref": 30,
 		"ranges": {
 			"host": { "start": "172.16.0.21", "end": "172.16.0.50" }
 	    }
@@ -183,6 +185,7 @@
 		"netmask": "255.255.255.0",
 		"broadcast": "192.168.1.255",
 		"router": "192.168.1.1",
+		"router_pref": 10,
 		"ranges": {
 			"host": { "start": "192.168.1.10", "end": "192.168.1.25" }
             }
@@ -195,6 +198,8 @@
 		"subnet": "172.16.2.0",
 		"netmask": "255.255.254.0",
 		"broadcast": "172.16.3.255",
+		"router_pref": 20,
+		"router": "172.16.2.1",
 		"ranges": {
 			"host": { "start": "172.16.2.21", "end": "172.16.2.254" },
 			"dhcp": { "start": "172.16.3.1", "end": "172.16.3.240" },
