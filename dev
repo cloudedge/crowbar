@@ -422,33 +422,43 @@ update_all_tracking_branches() {
 # Fetch (but do not merge) updates from all our remotes, in both the
 # main Crowbar repository and the barclamps.
 fetch_all() {
-    local remote barclamp b
+    local remote remotes=() barclamp b branches=()
     dev_is_setup
-    for remote in "${DEV_REMOTES[@]}" personal; do
+    if [[ $@ ]]; then
+        remotes=("$@")
+    else
+        remotes=("${DEV_REMOTES[@]}" personal)
+    fi
+    for remote in "${remotes[@]}"; do
         in_repo git_config_has "remote.$remote.url" || continue
         debug "Fetching from remote $remote:"
         debug "    Crowbar"
         in_repo git fetch -q "$remote" || continue
-        in_repo update_tracking_branches "$remote"
-        local -A touched_barclamps
-        for b in $(filter_branches_for_remote "$remote" \
-            $(all_ordered_branches)); do
-            for barclamp in $(barclamps_from_branch "$b"); do
-                [[ ${touched_barclamps[$barclamp]} ]] && continue
-                debug "    Barclamp $barclamp"
-                if in_barclamp "$barclamp" git_config_has 'remote.personal.url'; then
-                    in_barclamp "$barclamp" \
-                        git fetch -q --multiple origin personal || \
-                    die "Could not fetch updates for $barclamp"
-                else
+        branches=($(filter_branches_for_remote "$remote" \
+            $(all_ordered_branches)))
+        if [[ ${branches[@]} ]]; then
+            in_repo update_tracking_branches "$remote"
+            local -A touched_barclamps
+            for b in "${branches[@]}"; do
+                for barclamp in $(barclamps_from_branch "$b"); do
+                    [[ ${touched_barclamps[$barclamp]} ]] && continue
+                    debug "    Barclamp $barclamp"
                     in_barclamp "$barclamp" git fetch -q origin || \
-                    die "Could not fetch updates for $barclamp"
-                fi
-                in_barclamp "$barclamp" update_tracking_branches origin
-                touched_barclamps[$barclamp]="true"
+                        die "Could not fetch updates for $barclamp"
+                    in_barclamp "$barclamp" update_tracking_branches origin
+                    touched_barclamps[$barclamp]="true"
+                done
             done
-        done
-        unset touched_barclamps
+            unset touched_barclamps
+        else
+            for barclamp in "$CROWBAR_DIR/barclamps/"*; do
+                [[ -d $barclamp ]] || continue
+                (   cd "$barclamp"
+                    git_config_has "remote.${remote}.url" || continue
+                    debug "    Barclamp ${barclamp##*/}"
+                    git fetch "$remote")
+            done
+        fi
     done
 }
 
@@ -495,6 +505,91 @@ github_url() {
 }
 
 git_config_has() { git config --get "$1" &>/dev/null; }
+
+get_repo_name() {
+    local repo
+    repo="$(git config --get remote.origin.url)" || \
+        die "$PWD: Could not get the URL for the origin remote for this repo."
+    repo="${repo##*:}"
+    echo "${repo##*/}"
+}
+
+add_remote() {
+    # $1 = name of the remote to add.
+    # $2 = base part of the repo to add.
+    git_config_has "remote.$1.url" && return 0
+    local repo
+    repo="$(get_repo_name)" || exit 1
+    repo="$2/$repo"
+    git ls-remote "$repo" refs/heads/master &>/dev/null || {
+        debug "No git repo at $repo, skipping."
+        return 0
+    }
+    git remote add "$1" "$repo"
+    git fetch "$1"
+}
+
+rm_remote() {
+    git_config_has "remote.$1.url" || return 0
+    git remote rm "$1"
+}
+
+set_url_remote() {
+    git_config_has "remote.$1.url" || return 0
+    local repo
+    repo="$(get_repo_name)" || exit 1
+    repo="$2/$repo"
+    git ls-remote "$repo" refs/heads/master &>/dev/null || {
+        debug "No git repo at $repo, skipping."
+        return 0
+    }
+    git set-url "$1" "$repo"
+}
+
+show_remote() {
+    if [[ $1 ]]; then
+        git remote show "$1"
+    else
+        git remote show
+    fi
+}
+
+remote_wrapper() {
+    # $1 = one of "add", "rm", "set-url", "show"
+    # $2 = name of remote
+    # $3 = base part of the remote URL.  Only used for add and set-url.
+    local remote urlbase action bc
+    remote="$2"
+    urlbase="$3"
+    case $1 in
+        add) action=add_remote
+            if ! in_repo \
+                git_config_has "crowbar.remote.${remote}.urlbase"; then
+                in_repo git config "crowbar.remote.${remote}.urlbase" "$3"
+            fi;;
+        rm) action=rm_remote
+            if in_repo git_config_has "crowbar.remote.${remote}.urlbase"; then
+                in_repo git config --unset "crowbar.remote.${remote}.urlbase"
+            fi
+;;
+        set-url) action=set_url_remote
+            if in_repo git_config_has "crowbar.remote.${remote}.urlbase"; then
+                in_repo git config "crowbar.remote.${remote}.urlbase" "$3"
+            else
+                die "Cannot set-url for a remote your have not added."
+            fi;;
+        show) action=show_remote;;
+        ''|help) die "Please pass one of add, rm, set-url, or show.";;
+        *) die "Unknown action $1 for remote.";;
+    esac
+    for bc in "$CROWBAR_DIR/barclamps/"*; do
+        [[ -d $bc ]] || continue
+        debug "Barclamp: ${bc##*/}"
+        in_barclamp "${bc##*/}" $action "$remote" "$urlbase"
+    done
+    debug "Crowbar:"
+    in_repo $action "$remote" "$urlbase"
+}
 
 # Perform initial setup.  If you make any changes to this function, take
 # care to make sure it stays idempotent.
@@ -926,14 +1021,84 @@ sync_branch_from_personal() {
     }
 }
 
+# Handle merges across releases.  Most of the ugliness here is around making
+# sure that we don't get merge conflicts due to different barclamp submodule
+# updates, which we don't care about locally.
+merge_releases() {
+    # $@ = releases to merge.
+    local rel ref branch br mode t bc
+    local cur_rel="$(current_release)"
+    local -A our_barclamps their_barclamps
+    for branch in $(ordered_branches); do
+        branch_exists "$branch" || continue
+        br="${branch##*/}"
+        quiet_checkout "$branch" || \
+            die "Could not checkout $branch in merge_releases!"
+        # Save our current barclamp references to be restored later.
+        if [[ -d barclamps ]]; then
+            while read mode t ref bc; do
+                [[ $mode = '160000' && $t = 'commit' ]] || continue
+                our_barclamps["$bc"]="$ref"
+            done < <( git ls-tree -r HEAD barclamps)
+        fi
+        for rel in "$@"; do
+            [[ $rel ]] || continue
+            [[ $rel != $cur_rel ]] || continue
+            is_in "$rel" "$(show_releases)" || continue
+            local from_prefix="$(branch_prefix "$rel")"
+            branch_exists "${from_prefix}$br" || continue
+            if [[ -d barclamps ]]; then
+                local do_commit=''
+                # Find all the common barclamps that point at different
+                # submodule references.  Make the current branch point at the
+                # same refs as the to-be-merged branch to avoid merge conflicts
+                # that we really don't care about locally anyways.
+                while read mode t ref bc; do
+                    [[ ${our_barclamps[$bc]} && \
+                        ${our_barclamps[$bc]} != $ref ]] || continue
+                    git update-index --cacheinfo 160000 "$ref" "$bc"
+                    do_commit=true
+                done < <(git ls-tree -r "${from_prefix}$br" barclamps)
+                [[ $do_commit ]] && \
+                    git commit -m "Eschew barclamp merge conflicts."
+                unset do_commit
+            fi
+            git merge -q "${from_prefix}$br" || {
+                git merge --abort
+                die "$repo: Merge of $br from $rel into $cur_rel failed."
+            }
+        done
+        if [[ -d barclamps ]]; then
+            # Unwind submodule updates for barclamps.  This leaves them
+            # out of sync from where they really should be at this point,
+            # but the policy of the dev tool is that all "real" barclamp
+            # submodule reference updates happen at pull-requests-gen time.
+            while read mode t ref bc; do
+                [[ ${our_barclamps[$bc]} && \
+                    ${our_barclamps[$bc]} != $ref ]] || continue
+                ref="${our_barclamps[$bc]}"
+                git update-index --cacheinfo 160000 "$ref" "$bc"
+                do_commit=true
+            done < <(git ls-tree -r HEAD barclamps)
+            [[ $do_commit ]] && {
+                git commit -m "Move barclamp submodule refs back."
+                debug "Submodules updated for $branch in Crowbar."
+                debug "Builds with --exact will be broken until this branch has been through a pull request."
+            }
+            unset do_commit
+        fi
+    done
+}
+
 # Merges in changes into all local branches from their upstreams.
 # Assumes that upstream commits have already been fetched from the proper
 # remotes by running dev fetch.
 sync_repo() (
-    local branch head b bc remote ref personal repo="$1"
-    # $1 = dir to CD to initially.
+    local branch head b rel bc remote ref personal repo="$1"
+    shift
+    # $repo = dir to CD to initially.
     # Assumes that remote has already been fetched.
-    cd "$1"
+    cd "$repo"
     # Repo is not clean, we will refuse to merge in any case.
     git_is_clean || exit 1
     # Merge upstream branches from all remotes, but only if the branch
@@ -949,10 +1114,12 @@ sync_repo() (
             sync_branch_from_personal "$remote" "$branch"
         done
     done < <(git show-ref --heads)
+    [[ $@ ]] && merge_releases "$@"
     if [[ $(git rev-parse --verify -q HEAD) != \
         $(git rev-parse --verify -q $head) ]]; then
         quiet_checkout "${head#refs/heads/}"
     fi
+    return 0
 )
 
 # Recursivly merge all changes from a given branch into its children, if any.
@@ -971,7 +1138,7 @@ ripple_changes_out() {
             [[ $(in_repo git symbolic-ref HEAD) = refs/heads/$child ]] || \
                 in_repo quiet_checkout "$child"
             debug "Merging $parent into $child"
-            in_repo git merge -q "$parent" || \
+            in_repo git merge -s recursive -X theirs -q "$parent" || \
                 die "Merge $parent into $child branch of Crowbar failed."
         fi
         ripple_changes_out "$child"
@@ -988,15 +1155,18 @@ sync_everything() {
     # Do barclamps first.
     for b in $(barclamps_in_branch ${DEV_REMOTE_BRANCHES[@]}); do
         debug "Syncing $b"
-        sync_repo "$CROWBAR_DIR/barclamps/$b" && continue
-        unsynced_barclamps+=("$b")
+        if ! sync_repo "$CROWBAR_DIR/barclamps/$b" "$@"; then
+            unsynced_barclamps+=("$b")
+            continue
+        fi
     done
     # Finished with barclamps, now for crowbar.
     debug "Syncing crowbar"
     [[ $head ]] || head=$(git symbolic-ref HEAD) || \
         head=$(git rev_parse HEAD) || die "$repo: Cannot find head commit."
-    sync_repo "$CROWBAR_DIR" || \
+    sync_repo "$CROWBAR_DIR" "$@" || \
         die "Could not sync Crowbar with origin branches"
+
     # Now for the branch-rippling merges of doom
     for branch in $(root_branches); do
         ripple_changes_out "$branch"
@@ -1038,6 +1208,25 @@ Command line options:
            Does not try to merge any changes into your local repository.
            You can run a fetch at any time without disturbing your working
            code, provided you have network connectivity.
+           If you pass the name of a remote, fetch will try to fetch changes
+           from that remote in the main Crowbar repository and in each of the 
+           barclamps
+
+  remote -- Manage remotes across all dellcloudedge repositories.  It has the
+            following subcommands:
+            add <remote> <urlbase> : The add subcommand adds a new remote to
+                the Crowbar repositories.  
+            rm <remote> : The rm subcommand removes an already-existing remote
+                from the Crowbar repositories.
+            set-url <remote> <urlbase> : The set-url subcommands allows you to
+                give an existing remote a new URL in all the subrepositories.
+            show <remote> : The show subcommand shows remote information for
+                the named remote in all the Crowbar repositories.
+
+           Note that <urlbase> is the URL got will use without the actual
+           repository name.  dev assumes that the new remote uses the same
+           repository name as the origin remote does, and things will fail
+           badly if this assumption is violated.
 
   backup -- Push any locally committed changes in any repositories that were
             initially forked from dellcloudedge into your personal Github forks.
@@ -1046,7 +1235,9 @@ Command line options:
 
   sync -- Merge any changes that have been fetched into the current
           repositories.  dev is_clean should exit without any messages before
-          running this command.
+          running this command.  If you pass an argument to sync, it will
+          interpret that argument as a release or feature name and try to
+          merge any changes in common branches from that release.
 
   push -- Unconditionally push a branch (or branches) to your crowbar Github
           fork.  Any arguments are interpreted as branch names to push, and
@@ -1175,6 +1366,10 @@ do_pull_request() {
     # $1 = url to POST to
     # rest of args passed verbatim to make_pull_request helper.
     local posturl="$1"
+    for posturl in "$@"; do echo "$posturl"; done
+    local posturl="$1"
+    make_pull_request "$@"
+    return
     local -A res
     shift
     . <(make_pull_request "$@" | \
@@ -1570,8 +1765,8 @@ build_crowbar() {
 
 case $1 in
     is_clean) shift; crowbar_is_clean "$@";;
-    fetch) fetch_all;;
-    sync) sync_everything;;
+    fetch) shift; fetch_all "$@";;
+    sync) shift; sync_everything "$@";;
     setup) setup;;
     backup) backup_everything;;
     push) shift; push_branches "$@";;
@@ -1587,6 +1782,7 @@ case $1 in
     checkout) shift; checkout "$@";;
     build) shift; build_crowbar "$@";;
     show-repos) show_github_repos;;
+    remote) shift; remote_wrapper "$@";;
     erase-feature) shift; erase_release "feature/$1";;
     *) dev_help ; die "Unknown command $1.  Please use \"help\" for help.";;
 esac
