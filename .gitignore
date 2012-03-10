@@ -3,6 +3,8 @@
 *.iso
 build-info
 sha1sums
+*~
+.#*
 testing/
 *~
 .#*
