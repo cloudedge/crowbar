@@ -55,9 +55,6 @@
 [submodule "barclamps/sqoop"]
 	path = barclamps/sqoop
 	url = http://github.com/dellcloudedge/barclamp-sqoop.git
-[submodule "barclamps/hadoop_clouderamanager"]
-	path = barclamps/hadoop_clouderamanager
-	url = gitolite@10.9.244.31:barclamp-clouderamanager
 [submodule "barclamps/clouderamanager"]
 	path = barclamps/clouderamanager
 	url = http://github.com/dellcloudedge/barclamp-clouderamanager.git
