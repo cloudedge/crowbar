@@ -74,6 +74,15 @@ knifeloop() {
     done
 }
 
+check_machine_role() {
+    local count
+    for ((count=0; count <= 5; count++)); do
+        grep -q "crowbar-${FQDN//./_}" < <(knife node show "$FQDN" ) && return 0
+        sleep 10
+    done
+    die "Node machine-specific role got lost.  Deploy failed."
+}
+
 # Include OS specific functionality
 . chef_install_lib.sh || die "Could not include OS specific functionality"
 
@@ -244,6 +253,9 @@ if [[ ! -x /opt/tcpdump/tcpdump ]]; then
     cp /opt/tcpdump/tcpdump /updates/tcpdump
 fi
 
+# Bundle up our patches and put them in a sane place
+(cd "$DVD_PATH/extra"; tar czf "/tftpboot/patches.tar.gz" patches)
+
 chef_or_die "Initial chef run failed"
 
 echo "$(date '+%F %T %z'): Building Keys..."
@@ -353,6 +365,7 @@ do
     COUNT=$(($COUNT + 1))
 done
 sleep 30 # This is lame - the queue can be empty, but still processing and mess up future operations.
+check_machine_role
 
 # transition though all the states to ready.  Make sure that
 # Chef has completly finished with transition before proceeding
@@ -370,6 +383,7 @@ do
             die "Sanity check for transitioning to $state failed!"
     fi
     chef_or_die "Chef run for $state transition failed!"
+    check_machine_role
 done
 
 # OK, let looper_chef_client run normally now.
