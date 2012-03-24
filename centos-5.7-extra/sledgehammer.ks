@@ -5,15 +5,14 @@ auth --useshadow --enablemd5
 selinux --disabled
 firewall --disabled
 
-repo --name=a-base    --baseurl=http://mirror.centos.org/centos/6/os/$basearch
-repo --name=a-updates --baseurl=http://mirror.centos.org/centos/6/updates/$basearch
-repo --name=a-extras  --baseurl=http://mirror.centos.org/centos/6/extras/$basearch
-repo --name=a-epel    --baseurl=http://mirror.pnl.gov/epel/6/$basearch
+repo --name=a-base    --baseurl=http://mirror.centos.org/centos/5/os/$basearch
+repo --name=a-updates --baseurl=http://mirror.centos.org/centos/5/updates/$basearch
+repo --name=a-extras  --baseurl=http://mirror.centos.org/centos/5/extras/$basearch
+repo --name=a-epel    --baseurl=http://mirror.pnl.gov/epel/5/$basearch
 repo --name=a-live    --baseurl=http://www.nanotechnologies.qc.ca/propos/linux/centos-live/$basearch/live
-repo --name=a-rbel    --baseurl=http://rbel.frameos.org/stable/el6/$basearch
+repo --name=a-rbel    --baseurl=http://rbel.frameos.org/stable/el5/$basearch
 
 %packages
-@core
 bash
 kernel
 syslinux
@@ -23,6 +22,7 @@ chkconfig
 authconfig
 rootfiles
 comps-extras
+xkeyboard-config
 dhclient
 tcpdump
 vim-enhanced
@@ -30,15 +30,20 @@ openssh-clients
 openssh-server
 OpenIPMI-tools
 OpenIPMI
-rpcbind
+portmap
 nfs-utils
+procmail
 wget
+lshw
 dmidecode
+glibc.i686
 libxml2
 libxml2-devel
 zlib
 zlib-devel
 libxslt
+libxml2.i386
+compat-libstdc++-33.i386
 pciutils
 ntp
 which
@@ -48,6 +53,7 @@ tar
 gzip
 mktemp
 libsysfs.x86_64
+libsysfs.i386 
 yum
 curl
 ruby
@@ -58,7 +64,7 @@ ruby-rdoc
 rubygems
 rubygem-chef
 rubygem-ohai
-git
+git 
 gcc
 gcc-c++
 automake
@@ -70,9 +76,6 @@ parted
 %post
 
 yum -y remove '*.i?86'
-
-# Hack to really turn down SELINUX
-sed -i -e 's/\(^SELINUX=\).*$/\1disabled/' /etc/selinux/config
 
 ########################################################################
 # Create a sub-script so the output can be captured
@@ -124,4 +127,3 @@ EOF_postnochroot
 
 /bin/bash -x /root/postnochroot-install 2>&1 | tee /root/postnochroot-install.log
 
-%end
