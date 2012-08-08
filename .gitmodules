@@ -58,8 +58,8 @@
 [submodule "barclamps/raid"]
     path = barclamps/raid
     url = gitolite@10.9.244.31:barclamp-raid
-[submodule "barclamps/dell-branding"]
-    path = barclamps/dell-branding
+[submodule "barclamps/dell_branding"]
+    path = barclamps/dell_branding
     url = gitolite@10.9.244.31:barclamp-dell-branding
 [submodule "barclamps/overview"]
     path = barclamps/overview
