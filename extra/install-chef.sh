@@ -292,6 +292,9 @@ if [[ ! -e /etc/crowbar.install.key && $CROWBAR_REALM ]]; then
         (read key rest; echo "machine-install:$key" >/etc/crowbar.install.key)
 fi
 
+# Set the default OS for the provisioner
+sed -i "s/%default_os%/$OS_TOKEN/g" \
+    /opt/dell/barclamps/provisioner/chef/data_bags/crowbar/bc-template-provisioner.json
 if [[ $CROWBAR_REALM && -f /etc/crowbar.install.key ]]; then
     export CROWBAR_KEY=$(cat /etc/crowbar.install.key)
     sed -i -e "s/machine_password/${CROWBAR_KEY##*:}/g" $CROWBAR_FILE
@@ -341,10 +344,17 @@ pre_crowbar_fixups
 echo "$(date '+%F %T %z'): Bringing up Crowbar..."
 # Run chef-client to bring-up crowbar server
 chef_or_die "Failed to bring up Crowbar"
-# Make sure looper_chef_client is a NOOP until we are finished deploying
-touch /tmp/deploying
 
 post_crowbar_fixups
+
+# Wait for puma to start
+COUNT=0
+while (($COUNT < 60))
+do
+  sleep 1
+  pumactl -S /var/run/crowbar/puma.state stats 2>/dev/null >/devnull && COUNT=60
+  COUNT=$(($COUNT + 1))
+done
 
 # Add configured crowbar proposal
 if [ "$(crowbar crowbar proposal list)" != "default" ] ; then
@@ -377,17 +387,6 @@ crowbar crowbar show default >/var/log/default.json
 crowbar_up=true
 chef_or_die "Chef run after default proposal commit failed!"
 
-# Need to make sure that we have the indexer/expander finished
-COUNT=0
-VALUE=10000
-while (($COUNT < 60 && $VALUE !=0))
-do
-    sleep 1
-    VALUE=$(chef-expanderctl queue-depth | grep total | awk -F: '{ print $2 }')
-    echo "Expander Queue Total = $VALUE"
-    COUNT=$(($COUNT + 1))
-done
-sleep 30 # This is lame - the queue can be empty, but still processing and mess up future operations.
 check_machine_role
 
 ##
@@ -414,7 +413,6 @@ do
 done
 
 # OK, let looper_chef_client run normally now.
-rm /tmp/deploying
 
 # Spit out a warning message if we managed to not get an IP address
 IPSTR=$(crowbar network show default | parse_node_data -a attributes.network.networks.admin.ranges.admin.start)
@@ -445,6 +443,6 @@ fi
 echo "Admin node deployed."
 
 # Run tests -- currently the host will run this.
-/opt/dell/bin/barclamp_test.rb -t || \
-    die "Crowbar validation has errors! Please check the logs and correct."
+#/opt/dell/bin/barclamp_test.rb -t || \
+#    die "Crowbar validation has errors! Please check the logs and correct."
 touch /opt/dell/crowbar_framework/.crowbar-installed-ok
