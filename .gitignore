@@ -6,5 +6,7 @@ sha1sums
 *~
 .#*
 testing/
+.idea
+.rvmrc
 *~
 .#*
