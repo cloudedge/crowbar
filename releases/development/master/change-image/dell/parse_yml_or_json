@@ -41,7 +41,7 @@ def walk (t, res, key)
     indexes=[]
     t.each_index {|i| indexes.push i}
   else
-    STDERR.puts "walk was passed something that was not an array or a hash! Cannot work with #{t}"
+    STDERR.puts "walk was passed something that was not an array or a hash! Key '#{key}'' cannot work with '#{t}'"
     exit 1
   end
   indexes.each { |i|
