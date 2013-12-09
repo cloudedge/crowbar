@@ -4205,6 +4205,7 @@ run_server() {
   cd "$CROWBAR_TEST_DIR/opt/dell/crowbar_framework"
   echo "Starting Rails app & background threads"
   RAILS_ENV=development bundle exec script/delayed_job --queue=NodeRoleRunner -n 2 start
+  ps x | grep delayed_job
   RAILS_ENV=development bundle exec script/rails s Puma development
   RAILS_ENV=development bundle exec script/delayed_job stop
 }
